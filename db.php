@@ -139,7 +139,7 @@
 		    // Content
 		    $mail->isHTML(true);                                  // Set email format to HTML
 		    $mail->Subject = 'Recovery your password';
-		    $mail->Body    = "Click <a href ='http://localhost:8088/Project_web/reset_password.php?email=$email&token=$token'>here</a> to recover your password'";
+		    $mail->Body    = "Click <a href ='reset_password.php?email=$email&token=$token'>here</a> to recover your password'";
 		    //$mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
 
 		    $mail->send();
