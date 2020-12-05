@@ -1,7 +1,7 @@
 <?php
     session_start();
     if(isset($_SESSION['username'])){
-        header('Location: home.php');
+        header('Location: Layout/index.php');
         exit();
     }
    require_once("db.php");
@@ -27,7 +27,7 @@
             if($data){
                 $_SESSION['username'] = $username;
                 $_SESSION['data'] = $data;
-                header('Location: home.php');
+                header('Location: Layout/index.php');
                 exit();
             }
             else{
@@ -38,7 +38,6 @@
     <div class="main">
         <form action="" method="POST" class="form" id="form-2">
             <h3 class="heading">SIGN IN</h3>
-            <p class="desc">Welcome to google classroom ❤️</p>
 
             <p class="space"></p>
 

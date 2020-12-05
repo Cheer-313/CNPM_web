@@ -21,6 +21,7 @@
 		return $conn;
 	}
 
+	//Đăng nhập, đăng kí
 	function login($username, $password){
 		$sql = "select * from user where username = ?";
 		$conn = open_db();
@@ -196,206 +197,220 @@
 		return array('code' => 0, 'error' => 'Password is changed successfully');
 	}
 
-	function add_class($classname, $subject, $classroom, $email, $chooseImage){
-
-		$date_create = (date("d-m-Y",time())); //Ngày tạo class
-		$token = md5($classname.'+'.$email.'+'.random_int(1000,3000)); //Tạo mã code class
-
-		$sql = 'INSERT INTO classroom(classname, subject, room, email, img, date_create, token) VALUES (?, ?, ?, ?, ?, ?, ?)';
+	//Quản lí nhân viên
+	function add_staff($fullname,$phone,$email, $address, $position, $gender){
+		$sql = 'INSERT INTO nhanvien(TenNV, SDT, Email, DiaChi, ChucVu, GioiTinh) VALUES (?,?,?,?,?,?)';
 
 		$conn = open_db();
 		$stm = $conn->prepare($sql);
-		$stm->bind_param('sssssss',$classname, $subject, $classroom, $email, $chooseImage, $date_create, $token);
+		$stm->bind_param('ssssss',$fullname,$phone,$email, $address, $position, $gender);
 
 		if(!$stm->execute()){
-			return array('code' => 1, 'error' => 'Cant Execute');
+			return array('code' => 2, 'error' => 'Cant Execute');
 		}
 
-		$join_class = join_class($email, $token); // Thêm người tạo vào table user_classroom
-
-		return array('code' => 0, 'error' => 'Add class successfully');
+		return true;
 	}
 
-	function join_class($email, $token){
-		$sql = 'select * from classroom where token = ?'; //Kiem tra classcode|token
+	function delete_staff($id){
+		$sql = 'delete from nhanvien where MaNV = ?';
+
 		$conn = open_db();
 		$stm = $conn->prepare($sql);
-		$stm->bind_param('s', $token);
+		$stm->bind_param('i',$id);
 
-		if(!$stm->execute()){
-			return array('code' => 2, 'error' => 'Cant execute statement');
+		if($stm->execute()){
+			return true;
 		}
+		return false;
+	}
 
-		if($stm->affected_rows != 0){
-			$sql = 'INSERT INTO user_classroom VALUES (?,?)';
-			$conn = open_db();
-			$stm = $conn->prepare($sql);
-			$stm->bind_param('ss', $email, $token);
+	function update_staff($fullname,$phone,$email, $address, $position, $gender, $id){
+		$sql = 'UPDATE nhanvien SET TenNV=?,SDT=?, Email=?,DiaChi=?,ChucVu=?, GioiTinh=? WHERE MaNV = ?';
 
-			if(!$stm->execute()){
-				return array('code' => 3, 'error' => 'Cant execute statement insert');
-			}
-			return array('code' => 0, 'msg' => 'Join class successfully');
+		$conn = open_db();
+		$stm = $conn->prepare($sql);
+		$stm->bind_param('ssssssi',$fullname,$phone,$email, $address, $position, $gender, $id);
+
+		if($stm->execute()){
+			return true;
+		}
+		return false;
+	}
+
+	function load_table_staff(){
+		$sql = 'SELECT * FROM nhanvien WHERE 1';
+
+		$conn = open_db();
+		$result = $conn->query($sql);
+		if ($result->num_rows > 0) {
+			return $result;
 		}
 		else{
-			return array('code' => 1, 'error' => 'Dont find any classes');
+			return;
 		}
-		
 	}
-	//Lay permission user theo email
-	function get_permission($email){
-		$sql = 'SELECT * FROM user WHERE email =?';
+
+	//Quản lí sản phẩm
+	function add_product($pruduct_name,$product_type,$price,$producer, $img){
+		$sql = 'INSERT INTO sanpham(TenSP, LoaiSP, GiaSP, HangSX, HinhAnh) VALUES (?,?,?,?,?)';
 
 		$conn = open_db();
 		$stm = $conn->prepare($sql);
-		$stm->bind_param('s',$email);
+		$stm->bind_param('ssiss',$pruduct_name,$product_type,$price,$producer, $img);
 
 		if(!$stm->execute()){
-			return array('code' => 2, 'error' => 'Cant execute statement');
+			return array('code' => 2, 'error' => 'Cant Execute');
 		}
 
-		$result =  $stm->get_result();
-		if ($result->num_rows == 0) {
-			return null;
-		}
-		$data = $result->fetch_assoc();
-		return $data['permission'];
+		return true;
 	}
 
-	//Lay fullname user theo email
-	function get_fullname($email){
-		$sql = 'SELECT * FROM user WHERE email =?';
+	function delete_product($id){
+		$sql = 'delete from sanpham where MaSP = ?';
 
 		$conn = open_db();
 		$stm = $conn->prepare($sql);
-		$stm->bind_param('s',$email);
+		$stm->bind_param('i',$id);
 
-		if(!$stm->execute()){
-			return array('code' => 2, 'error' => 'Cant execute statement');
+		if($stm->execute()){
+			return true;
 		}
-
-		$result =  $stm->get_result();
-		if ($result->num_rows == 0) {
-			return null;
-		}
-		$data = $result->fetch_assoc();
-		return $data['hoten'];
+		return false;
 	}
 
-	function load_data_home($email, $permission){
-		/* 
-			if permmission == 0 => load all data table classroom
-			if permision == 1 -> load data table classroom where emmail = email.user
-			if permission = 2 => load data table classroom where token in (select token from user_classroom where email = emmail.user)
-		*/
-		$conn = open_db();
+	function update_product($pruduct_name,$product_type,$price,$producer, $img, $id){
+		$sql = 'UPDATE sanpham SET TenSP=?, LoaiSP=?, GiaSP=?, HangSX=?, HinhAnh=? WHERE MaSP = ?';
 
-		if($permission == 0){
-			$sql = 'select * from classroom';
-			$result = $conn->query($sql);
-			return $result;
-		}
-		else if($permission == 1){
-			//Lấy lớp học của giáo viên tạo
-			$sql = 'select * from classroom where email = ? or token in (select token from user_classroom where email = ?)';
-			$stm = $conn->prepare($sql);
-			$stm->bind_param('ss',$email,$email);
-
-			if(!$stm->execute()){
-			return array('code' => 2, 'error' => 'Cant execute statement');
-			}
-
-			$result =  $stm->get_result();
-			return $result;
-			}
-
-		else if($permission == 2){
-			$sql = 'select * from classroom where token in (select token from user_classroom where email = ?)';
-			$stm = $conn->prepare($sql);
-			$stm->bind_param('s',$email);
-
-			if(!$stm->execute()){
-			return array('code' => 2, 'error' => 'Cant execute statement');
-			}
-
-			$result =  $stm->get_result();
-			return $result;
-		}
-		
-	}
-
-	function load_data_user_people($token){
-		$sql = 'select * from user where email in (select email from user_classroom where token = ?)';
-		
 		$conn = open_db();
 		$stm = $conn->prepare($sql);
-		if($stm == false){
-			return array('code' => 1, 'error' => 'fail');
-		}
-		$stm->bind_param('s',$token);
+		$stm->bind_param('ssissi',$pruduct_name,$product_type,$price,$producer, $img, $id);
 
-		if(!$stm->execute()){
-			return array('code' => 2, 'error' => 'Cant execute statement');
+		if($stm->execute()){
+			return true;
 		}
-		$result =  $stm->get_result();
-			return $result;
-
+		return false;
 	}
 
-	//Lay thong tin lop hoc theo token
-	function get_detail_class($token){
-		$sql = 'select * from classroom where token = ?';
+	function load_table_product(){
+		$sql = 'SELECT * FROM sanpham WHERE 1';
+
+		$conn = open_db();
+		$result = $conn->query($sql);
+		if ($result->num_rows > 0) {
+			return $result;
+		}
+		else{
+			return;
+		}
+	}
+
+	//Quản lí kho
+	function add_stock($id_product, $pruduct_name, $quantity, $quantity_sell, $date, $status){
+		$sql = 'INSERT INTO kho(MaSP, TenSP, SLTonKho, SLBan, NgayNhap, TrangThai) VALUES (?,?,?,?,?,?)';
+
 		$conn = open_db();
 		$stm = $conn->prepare($sql);
-		$stm->bind_param('s',$token);
+		$stm->bind_param('isiiss',$id_product, $pruduct_name, $quantity, $quantity_sell, $date, $status);
 
 		if(!$stm->execute()){
-			return array('code' => 2, 'error' => 'Cant execute statement');
+			return array('code' => 2, 'error' => 'Cant Execute');
 		}
 
-		$result =  $stm->get_result();
-		$data = $result->fetch_assoc();
-		return $data;
+		return true;
 	}
 
-	function delete_class($token){
-		/* 
-			if permmission == 0 => delete all data table classroom and user_classroom
-			if permision == 1 -> delete all data table classroom and user_classroom emmail = email.teacher
-			if permission = 2 => delete all data table user_classroom where token = token.classroom
-		*/
-		//Xóa luôn trong table user_classroom
-	    $sql = 'delete from classroom where token = ?';
-	    $conn = open_db();
-	    $stm = $conn -> prepare($sql);
-	    $stm -> bind_param('s',$token);
-	    if($stm -> execute()){
-	    	$sql1 = 'delete from user_classroom where token = ?';
-	    	$conn = open_db();
-	    	$stm1 = $conn -> prepare($sql1);
-	    	$stm1 -> bind_param('s',$token);
-	    	if($stm1 -> execute()){
-	    		return true;
-	    	}
-	       	else{
-	       		return false;
-	       	}
-        }
-	    else{
-	        return false;
-        }
-    }
-    
-    function modify_class($classname, $subject, $classroom, $token, $chooseImage){
-	    $sql = "update classroom set classname = ?,subject= ?,room=?,img=? where token = ?";
-	    $conn = open_db();
-	    $stm = $conn->prepare($sql);
-	    $stm -> bind_param('sssss',$classname,  $subject,  $classroom, $chooseImage, $token);
-	    if($stm -> execute()){
-	        return true;
-	    }
-	    else{
-	        return false;
-	    }
+	function delete_stock($id){
+		$sql = 'delete from kho where MaKho = ?';
+
+		$conn = open_db();
+		$stm = $conn->prepare($sql);
+		$stm->bind_param('i',$id);
+
+		if($stm->execute()){
+			return true;
+		}
+		return false;
+	}
+
+	function update_stock($id_product, $pruduct_name, $quantity, $quantity_sell, $date, $status, $id){
+		$sql = 'UPDATE kho SET MaSP=?, TenSP=?, SLTonKho=?, SLBan=?, NgayNhap=?, TrangThai=? WHERE MaKho = ?';
+
+		$conn = open_db();
+		$stm = $conn->prepare($sql);
+		$stm->bind_param('isiissi',$id_product, $pruduct_name, $quantity, $quantity_sell, $date, $status, $id);
+
+		if($stm->execute()){
+			return true;
+		}
+		return false;
+	}
+
+	function load_table_stock(){
+		$sql = 'SELECT * FROM kho WHERE 1';
+
+		$conn = open_db();
+		$result = $conn->query($sql);
+		if ($result->num_rows > 0) {
+			return $result;
+		}
+		else{
+			return;
+		}
+	}
+
+	//Quản lí hóa đơn
+	function add_bill($id_staff, $id_customer, $date){
+		$sql = 'INSERT INTO hoadon(MaNV, MaKH, NgayNhap, TongTien) VALUES (?,?,?,?)';
+		$total = random_int(100000,1000000);
+
+		$conn = open_db();
+		$stm = $conn->prepare($sql);
+		$stm->bind_param('sssi', $id_staff, $id_customer, $date, $total);
+
+		if(!$stm->execute()){
+			return array('code' => 2, 'error' => 'Cant Execute');
+		}
+
+		return true;
+	}
+
+	function delete_bill($id){
+		$sql = 'delete from hoadon where MaHD = ?';
+
+		$conn = open_db();
+		$stm = $conn->prepare($sql);
+		$stm->bind_param('i',$id);
+
+		if($stm->execute()){
+			return true;
+		}
+		return false;
+	}
+
+	function update_bill($id_staff, $id_customer, $date, $id){
+		$sql = 'UPDATE hoadon SET MaNV=?, MaKH=?, NgayNhap=? WHERE MaHD = ?';
+
+		$conn = open_db();
+		$stm = $conn->prepare($sql);
+		$stm->bind_param('sssi',$id_staff, $id_customer, $date, $id);
+
+		if($stm->execute()){
+			return true;
+		}
+		return false;
+	}
+
+	function load_table_bill(){
+		$sql = 'SELECT * FROM hoadon WHERE 1';
+
+		$conn = open_db();
+		$result = $conn->query($sql);
+		if ($result->num_rows > 0) {
+			return $result;
+		}
+		else{
+			return;
+		}
 	}
  ?>

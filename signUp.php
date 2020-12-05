@@ -47,7 +47,6 @@
     <div class="main">
         <form action="signUp.php" method="POST" class="form" id="form-1">
             <h3 class="heading">SIGN UP</h3>
-            <p class="desc">Welcome to google classroom ❤️</p>
 
             <p class="space"></p>
 
