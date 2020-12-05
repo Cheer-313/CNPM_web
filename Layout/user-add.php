@@ -59,7 +59,7 @@ require_once $_SERVER['DOCUMENT_ROOT'].'/CNPM/db.php';
                     </a>
                 </li>
                 <li>
-                    <a href="role-list.php">
+                    <a href="product-list.php">
                         <i class="fa fa-book mr-2"></i> Quản lý sản phẩm
                     </a>
                 </li>
